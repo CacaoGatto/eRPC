@@ -151,11 +151,15 @@ class HugeAlloc {
    * @param size The size of the buffer, which may or may not be a class size
    */
   inline size_t get_class(size_t size) {
+    assert(size >= 1 && size <= k_max_class_size);
 #ifdef _WIN32
     // XXX: There's to be an issue with asm(bsrl) used for fast get_class()
     return get_class_slow(size);
+#elif defined(__aarch64__)
+    if (size <= k_min_class_size)
+      return 0;
+    return static_cast<size_t>(32 - __builtin_clz((size - 1) >> k_min_class_bit_shift));
 #else
-    assert(size >= 1 && size <= k_max_class_size);
     // Use bit shift instead of division to make debug-mode code a faster
     return msb_index(static_cast<int>((size - 1) >> k_min_class_bit_shift));
 #endif
@@ -163,8 +167,6 @@ class HugeAlloc {
 
   /// Reference function for the optimized \p get_class function above
   inline size_t get_class_slow(size_t size) {
-    assert(size >= 1 && size <= k_max_class_size);
-
     size_t size_class = 0;                // The size class for \p size
     size_t class_lim = k_min_class_size;  // The max size for \p size_class
     while (size > class_lim) {

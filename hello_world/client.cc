@@ -11,7 +11,11 @@ int main() {
   std::string client_uri = kClientHostname + ":" + std::to_string(kUDPPort);
   erpc::Nexus nexus(client_uri);
 
+#ifdef ERPC_DPDK
+  rpc = new erpc::Rpc<erpc::CTransport>(&nexus, nullptr, 0, sm_handler, 0, kClientHostname.c_str());
+#else
   rpc = new erpc::Rpc<erpc::CTransport>(&nexus, nullptr, 0, sm_handler);
+#endif
 
   std::string server_uri = kServerHostname + ":" + std::to_string(kUDPPort);
   int session_num = rpc->create_session(server_uri, 0);
@@ -25,4 +29,5 @@ int main() {
   rpc->run_event_loop(100);
 
   delete rpc;
+  return 0;
 }

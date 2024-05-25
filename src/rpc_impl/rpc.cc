@@ -12,7 +12,11 @@ namespace erpc {
 
 template <class TTr>
 Rpc<TTr>::Rpc(Nexus *nexus, void *context, uint8_t rpc_id,
+#ifdef ERPC_DPDK
+              sm_handler_t sm_handler, uint8_t phy_port, const char* ipv4_addr)
+#else
               sm_handler_t sm_handler, uint8_t phy_port)
+#endif
     : nexus_(nexus),
       context_(context),
       rpc_id_(rpc_id),
@@ -51,8 +55,15 @@ Rpc<TTr>::Rpc(Nexus *nexus, void *context, uint8_t rpc_id,
   // Partially initialize the transport without using hugepages. This
   // initializes the transport's memory registration functions required for
   // the hugepage allocator.
+#ifdef ERPC_DPDK
+  uint32_t ipv4_addr_int = (ipv4_addr == nullptr) ? 0 : ntohl(inet_addr(ipv4_addr));
+#endif
   transport_ =
+#ifdef ERPC_DPDK
+      new TTr(nexus->sm_udp_port_, rpc_id, phy_port, numa_node_, trace_file_, ipv4_addr_int);
+#else
       new TTr(nexus->sm_udp_port_, rpc_id, phy_port, numa_node_, trace_file_);
+#endif
 
   huge_alloc_ =
       new HugeAlloc(kInitialHugeAllocSize, numa_node_, transport_->reg_mr_func_,

@@ -6,6 +6,8 @@ include(CMakeDependentOption)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(DPP_VER True)
+set(DPP_MANUAL True)
 
 # Parse the build type
 if(PERF)
@@ -332,44 +334,62 @@ if(DPDK_NEEDED STREQUAL "true")
 
   else(WIN32)
     # Linux
-    if(NOT DEFINED ENV{RTE_SDK})
-      message(STATUS "RTE_SDK is not defined, try to use pkg-config")
-      find_package(PkgConfig REQUIRED)
-      pkg_check_modules(PKG_DPDK_LIB IMPORTED_TARGET libdpdk)
-      if(NOT PKG_DPDK_LIB_FOUND) 
-        message(FATAL_ERROR "DPDK library not found")
-      endif()
-      set(LIBRARIES ${LIBRARIES} "-Wl,--whole-archive -Wl,--as-needed" PkgConfig::PKG_DPDK_LIB pthread "-Wl,--no-whole-archive")
-      include_directories(SYSTEM ${PKG_DPDK_LIB_INCLUDE_DIRS})
-    else()
-      set(RTE_SDK $ENV{RTE_SDK})
-      set(DPDK_INSTALL_DIR "${RTE_SDK}/build/install/usr/local")
-
-      # DPDK installs libraries into local/lib on Mariner, but
-      # local/lib/x86_64-linux-gnu on Ubuntu
-      set(DPDK_LIB_DIR "${DPDK_INSTALL_DIR}/lib/x86_64-linux-gnu")
-      if(NOT EXISTS ${DPDK_LIB_DIR})
-        set(DPDK_LIB_DIR "${DPDK_INSTALL_DIR}/lib")
-        if(NOT EXISTS ${DPDK_LIB_DIR})
-          message(FATAL_ERROR "${DPDK_LIB_DIR} not found. Did you run `ninja install`?")
-        endif()
-      endif()
-  
-      # We use some hacky command-line and CMake magic to construct DPDK library list
+    if(DPP_VER STREQUAL "True")
+      message("Using Mellanox DPDK on ${CMAKE_HOST_SYSTEM_PROCESSOR}")
+      set(PKGCONFIG_OPTION "--static --libs")
+      set(MLNX_DPDK_DIR_ROOT "/opt/mellanox/dpdk")
+      include_directories(SYSTEM ${MLNX_DPDK_DIR_ROOT}/include/dpdk)
+      include_directories(SYSTEM ${MLNX_DPDK_DIR_ROOT}/include/${CMAKE_HOST_SYSTEM_PROCESSOR}-linux-gnu/dpdk)
       execute_process(
-        COMMAND bash -c "PKG_CONFIG_PATH=${DPDK_LIB_DIR}/pkgconfig pkg-config --static --libs-only-l libdpdk"
-        OUTPUT_VARIABLE DPDK_PKGCONFIG_OUT RESULT_VARIABLE pkgconfig_ret)
+        COMMAND bash -c "pkg-config ${PKGCONFIG_OPTION} libdpdk-libs"
+        OUTPUT_VARIABLE DPDK_PKGCONFIG_LIBS_OUT RESULT_VARIABLE pkgconfig_ret)
       if(pkgconfig_ret EQUAL "1")
-        message( FATAL_ERROR "Failed to run pkgconfig on DPDK (in ${DPDK_LIB_DIR}/pkgconfig). See error above.")
+        message( FATAL_ERROR "Failed to run pkgconfig on DPDK. See error above.")
       endif()
-  
-      string(STRIP ${DPDK_PKGCONFIG_OUT} DPDK_PKGCONFIG_OUT) # Remove newline from pkg-config output
+      string(STRIP ${DPDK_PKGCONFIG_LIBS_OUT} DPDK_PKGCONFIG_LIBS_OUT) # Remove newline from pkg-config output
       set(LIBDPDK_LIBRARIES
-        "-Wl,--whole-archive -Wl,--as-needed -L${DPDK_LIB_DIR} ${DPDK_PKGCONFIG_OUT} -lpthread -Wl,--no-whole-archive")
+          "-Wl,--whole-archive -Wl,--as-needed ${DPDK_PKGCONFIG_LIBS_OUT} -lpthread -Wl,--no-whole-archive")
       set(LIBRARIES ${LIBRARIES} ${LIBDPDK_LIBRARIES})
-  
-      link_directories(${DPDK_LIB_DIR})
-      include_directories(SYSTEM ${DPDK_INSTALL_DIR}/include)      
+    else()
+      if(NOT DEFINED ENV{RTE_SDK})
+        message(STATUS "RTE_SDK is not defined, try to use pkg-config")
+        find_package(PkgConfig REQUIRED)
+        pkg_check_modules(PKG_DPDK_LIB IMPORTED_TARGET libdpdk)
+        if(NOT PKG_DPDK_LIB_FOUND) 
+          message(FATAL_ERROR "DPDK library not found")
+        endif()
+        set(LIBRARIES ${LIBRARIES} "-Wl,--whole-archive -Wl,--as-needed" PkgConfig::PKG_DPDK_LIB pthread "-Wl,--no-whole-archive")
+        include_directories(SYSTEM ${PKG_DPDK_LIB_INCLUDE_DIRS})
+      else()
+        set(RTE_SDK $ENV{RTE_SDK})
+        set(DPDK_INSTALL_DIR "${RTE_SDK}/build/install/usr/local")
+
+        # DPDK installs libraries into local/lib on Mariner, but
+        # local/lib/x86_64-linux-gnu on Ubuntu
+        set(DPDK_LIB_DIR "${DPDK_INSTALL_DIR}/lib/x86_64-linux-gnu")
+        if(NOT EXISTS ${DPDK_LIB_DIR})
+          set(DPDK_LIB_DIR "${DPDK_INSTALL_DIR}/lib")
+          if(NOT EXISTS ${DPDK_LIB_DIR})
+            message(FATAL_ERROR "${DPDK_LIB_DIR} not found. Did you run `ninja install`?")
+          endif()
+        endif()
+
+        # We use some hacky command-line and CMake magic to construct DPDK library list
+        execute_process(
+          COMMAND bash -c "PKG_CONFIG_PATH=${DPDK_LIB_DIR}/pkgconfig pkg-config --static --libs-only-l libdpdk"
+          OUTPUT_VARIABLE DPDK_PKGCONFIG_OUT RESULT_VARIABLE pkgconfig_ret)
+        if(pkgconfig_ret EQUAL "1")
+          message( FATAL_ERROR "Failed to run pkgconfig on DPDK (in ${DPDK_LIB_DIR}/pkgconfig). See error above.")
+        endif()
+
+        string(STRIP ${DPDK_PKGCONFIG_OUT} DPDK_PKGCONFIG_OUT) # Remove newline from pkg-config output
+        set(LIBDPDK_LIBRARIES
+          "-Wl,--whole-archive -Wl,--as-needed -L${DPDK_LIB_DIR} ${DPDK_PKGCONFIG_OUT} -lpthread -Wl,--no-whole-archive")
+        set(LIBRARIES ${LIBRARIES} ${LIBDPDK_LIBRARIES})
+
+        link_directories(${DPDK_LIB_DIR})
+        include_directories(SYSTEM ${DPDK_INSTALL_DIR}/include)
+      endif()
     endif()
   endif(WIN32)
 else()

@@ -3,7 +3,7 @@
 namespace erpc {
 
 static void memory_barrier() { asm volatile("" ::: "memory"); }
-
+#ifndef __aarch64__
 static void lfence() { asm volatile("lfence" ::: "memory"); }
 
 static void sfence() { asm volatile("sfence" ::: "memory"); }
@@ -20,5 +20,5 @@ static void cpuid(unsigned int* eax, unsigned int* ebx, unsigned int* ecx,
                : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
                : "0"(*eax), "2"(*ecx));
 }
-
+#endif
 }  // namespace erpc

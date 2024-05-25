@@ -22,7 +22,7 @@ static_assert(sizeof(pkthdr_t::headroom_) == kInetHdrsTotSize,
 // allocator is provided.
 DpdkTransport::DpdkTransport(uint16_t sm_udp_port, uint8_t rpc_id,
                              uint8_t phy_port, size_t numa_node,
-                             FILE *trace_file)
+                             FILE *trace_file, uint32_t ipv4_addr)
     : Transport(TransportType::kDPDK, rpc_id, phy_port, numa_node, trace_file) {
   // For DPDK, we compute the datapath UDP port using the physical port and Rpc
   // ID, so we don't need sm_udp_port like Raw transport.
@@ -141,6 +141,7 @@ DpdkTransport::DpdkTransport(uint16_t sm_udp_port, uint8_t rpc_id,
     g_dpdk_lock.unlock();
   }
 
+  resolve_.ipv4_addr_ = ipv4_addr;
   resolve_phy_port();
   init_mem_reg_funcs();
 
@@ -171,7 +172,8 @@ void DpdkTransport::resolve_phy_port() {
   rte_eth_macaddr_get(phy_port_, &mac);
   memcpy(resolve_.mac_addr_, &mac.addr_bytes, sizeof(resolve_.mac_addr_));
 
-  resolve_.ipv4_addr_ = get_port_ipv4_addr(phy_port_);
+  if (resolve_.ipv4_addr_ == 0)
+    resolve_.ipv4_addr_ = get_port_ipv4_addr(phy_port_);
 
   // Resolve RSS indirection table size
   struct rte_eth_dev_info dev_info;
@@ -179,7 +181,8 @@ void DpdkTransport::resolve_phy_port() {
 
   const std::string drv_name = dev_info.driver_name;
   rt_assert(drv_name == "net_mlx4" or drv_name == "net_mlx5" or
-                drv_name == "mlx5_pci",
+            drv_name == "mlx5_pci" or
+            drv_name == "mlx5_auxiliary",  // BlueField
             "eRPC supports only mlx4 or mlx5 devices with DPDK");
 
   if (std::string(dev_info.driver_name) == "net_mlx4") {
@@ -198,13 +201,13 @@ void DpdkTransport::resolve_phy_port() {
   struct rte_eth_link link;
   if (dpdk_proc_type_ == DpdkProcType::kPrimary) {
     rte_eth_link_get(static_cast<uint8_t>(phy_port_), &link);
-    rt_assert(link.link_status == ETH_LINK_UP,
+    rt_assert(link.link_status == RTE_ETH_LINK_UP,
               "Port " + std::to_string(phy_port_) + " is down.");
   } else {
     link = g_memzone->link_[phy_port_];
   }
 
-  if (link.link_speed != ETH_SPEED_NUM_NONE) {
+  if (link.link_speed != RTE_ETH_SPEED_NUM_NONE) {
     // link_speed is in Mbps. The 10 Gbps check below is just a sanity check.
     rt_assert(link.link_speed >= 10000, "Link too slow");
     resolve_.bandwidth_ =

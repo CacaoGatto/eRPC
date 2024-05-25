@@ -13,6 +13,12 @@ int main() {
   erpc::Nexus nexus(server_uri);
   nexus.register_req_func(kReqType, req_handler);
 
+#ifdef ERPC_DPDK
+  rpc = new erpc::Rpc<erpc::CTransport>(&nexus, nullptr, 0, nullptr, 0, kServerHostname.c_str());
+#else
   rpc = new erpc::Rpc<erpc::CTransport>(&nexus, nullptr, 0, nullptr);
+#endif
   rpc->run_event_loop(100000);
+
+  return 0;
 }

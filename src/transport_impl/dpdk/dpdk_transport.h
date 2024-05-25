@@ -204,7 +204,7 @@ class DpdkTransport : public Transport {
   static constexpr size_t kNumMbufs = (kNumRxRingEntries * 2 - 1);
 
   // XXX: ixgbe does not support fast free offload, but i40e does
-  static constexpr uint32_t kOffloads = DEV_TX_OFFLOAD_MULTI_SEGS;
+  static constexpr uint32_t kOffloads = RTE_ETH_TX_OFFLOAD_MULTI_SEGS;
 
   /// Per-element size for the packet buffer memory pool
   static constexpr size_t kMbufSize =
@@ -225,7 +225,7 @@ class DpdkTransport : public Transport {
   };
 
   DpdkTransport(uint16_t sm_udp_port, uint8_t rpc_id, uint8_t phy_port,
-                size_t numa_node, FILE *trace_file);
+                size_t numa_node, FILE *trace_file, uint32_t ipv4_addr = 0);
   void init_hugepage_structures(HugeAlloc *huge_alloc, uint8_t **rx_ring);
 
   ~DpdkTransport();

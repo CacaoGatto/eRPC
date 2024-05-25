@@ -14,10 +14,18 @@ namespace erpc {
 
 /// Return the TSC
 static inline size_t rdtsc() {
+#ifdef __x86_64__
   uint64_t rax;
   uint64_t rdx;
   asm volatile("rdtsc" : "=a"(rax), "=d"(rdx));
   return static_cast<size_t>((rdx << 32) | rax);
+#elif defined(__aarch64__)
+  uint64_t tsc;
+  asm volatile("mrs %0, cntvct_el0" : "=r"(tsc));
+  return static_cast<size_t>(tsc);
+#else
+#error "Unsupported architecture"
+#endif
 }
 
 /// An alias for rdtsc() to distinguish calls on the critical path
@@ -58,6 +66,7 @@ class ChronoTimer {
 };
 
 static double measure_rdtsc_freq() {
+#ifdef __x86_64__
   ChronoTimer chrono_timer;
   const uint64_t rdtsc_start = rdtsc();
 
@@ -74,6 +83,13 @@ static double measure_rdtsc_freq() {
   rt_assert(freq_ghz >= 0.5 && freq_ghz <= 5.0, "Invalid RDTSC frequency");
 
   return freq_ghz;
+#elif defined(__aarch64__)
+  uint32_t freq_hz;
+  asm volatile ("mrs %0, cntfrq_el0; isb; " : "=r"(freq_hz) :: "memory");
+  return static_cast<double>(freq_hz);
+#else
+#error "Unsupported architecture"
+#endif
 }
 
 /// Convert cycles measured by rdtsc with frequence \p freq_ghz to seconds

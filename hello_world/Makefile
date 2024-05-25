@@ -4,6 +4,9 @@
 #   * If DTRANSPORT=raw, use `make raw`
 #   * If DTRANSPORT=infiniband, use `make infiniband`
 LIBS = -lerpc -lpthread -lnuma -ldl
+DPDK_INC = -I/opt/mellanox/dpdk/include/dpdk -I/opt/mellanox/dpdk/include/$(shell g++ -dumpmachine)/dpdk
+DPDK_LIB = -L/opt/mellanox/dpdk/lib/$(shell g++ -dumpmachine)
+RTE_LIBS = -lrte_eal -lrte_mempool -lrte_mbuf -lrte_ethdev
 
 error:
 	@echo "Please choose one of the following targets: infiniband, raw, dpdk, clean"
@@ -18,18 +21,18 @@ dpdk:
 	g++ -g -std=c++11 -o server server.cc \
 		-Wno-deprecated-declarations \
 		-DERPC_DPDK=true -march=native \
-		-I ../src -I ../third_party/asio/include -I /usr/include/dpdk \
+		-I ../src -I ../third_party/asio/include $(DPDK_INC) \
 		-L ../build $(LIBS) \
-		-Wl,--whole-archive -ldpdk -Wl,--no-whole-archive \
-		-lnuma -ldl -libverbs -lmlx4 -lmlx5
+		-Wl,--whole-archive $(RTE_LIBS) $(DPDK_LIB) -Wl,--no-whole-archive \
+		-lnuma -ldl -libverbs -lmlx5
 
 	g++ -g -std=c++11 -o client client.cc \
 		-Wno-deprecated-declarations \
 		-DERPC_DPDK=true -march=native \
-		-I ../src -I ../third_party/asio/include -I /usr/include/dpdk \
+		-I ../src -I ../third_party/asio/include $(DPDK_INC) \
 		-L ../build $(LIBS) \
-		-Wl,--whole-archive -ldpdk -Wl,--no-whole-archive \
-		-lnuma -ldl -libverbs -lmlx4 -lmlx5
+		-Wl,--whole-archive $(RTE_LIBS) $(DPDK_LIB) -Wl,--no-whole-archive \
+		-lnuma -ldl -libverbs -lmlx5
 clean:
 	rm server client
 

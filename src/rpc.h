@@ -111,7 +111,11 @@ class Rpc {
    * @throw runtime_error if construction fails
    */
   Rpc(Nexus *nexus, void *context, uint8_t rpc_id, sm_handler_t sm_handler,
+#ifdef ERPC_DPDK
+      uint8_t phy_port = 0, const char* ipv4_addr = nullptr);
+#else
       uint8_t phy_port = 0);
+#endif
 
   /// Destroy the Rpc from a foreground thread
   ~Rpc();

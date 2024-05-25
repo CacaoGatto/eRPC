@@ -52,17 +52,17 @@ void DpdkTransport::setup_phy_port(uint16_t phy_port, size_t numa_node,
   memset(&eth_conf, 0, sizeof(eth_conf));
 
   if (!kIsWindows) {
-    eth_conf.rxmode.mq_mode = ETH_MQ_RX_RSS;
+    eth_conf.rxmode.mq_mode = RTE_ETH_MQ_RX_RSS;
     eth_conf.lpbk_mode = 1;
     eth_conf.rx_adv_conf.rss_conf.rss_key =
         const_cast<uint8_t *>(kDefaultRssKey);
     eth_conf.rx_adv_conf.rss_conf.rss_key_len = 40;
-    eth_conf.rx_adv_conf.rss_conf.rss_hf = ETH_RSS_UDP;
+    eth_conf.rx_adv_conf.rss_conf.rss_hf = RTE_ETH_RSS_UDP;
   } else {
-    eth_conf.rxmode.mq_mode = ETH_MQ_RX_NONE;
+    eth_conf.rxmode.mq_mode = RTE_ETH_MQ_RX_NONE;
   }
 
-  eth_conf.txmode.mq_mode = ETH_MQ_TX_NONE;
+  eth_conf.txmode.mq_mode = RTE_ETH_MQ_TX_NONE;
   eth_conf.txmode.offloads = kOffloads;
 
   int ret = rte_eth_dev_configure(phy_port, kMaxQueuesPerPort,
