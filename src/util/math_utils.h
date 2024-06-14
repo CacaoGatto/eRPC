@@ -34,15 +34,9 @@ static inline size_t lsb_index(int x) {
 /// bit is 1. (x = 0 returns 0, x = 1 returns 1.)
 static inline size_t msb_index(int x) {
   assert(x < INT32_MAX / 2);
-#ifdef __x86_64__
   int index;
   asm("bsrl %1, %0" : "=r"(index) : "r"(x << 1));
   return static_cast<size_t>(index);
-#elif defined(__aarch64__)
-  return 0;
-#else
-#error "Unsupported architecture"
-#endif
 }
 
 /// C++11 constexpr ceil

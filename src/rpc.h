@@ -83,9 +83,15 @@ class Rpc {
 
  public:
   /// Max request or response *data* size, i.e., excluding packet headers
+#ifndef DMA_SUPPORTED
   static constexpr size_t kMaxMsgSize =
       HugeAlloc::k_max_class_size -
       ((HugeAlloc::k_max_class_size / TTr::kMaxDataPerPkt) * sizeof(pkthdr_t));
+#else
+  static constexpr size_t kMaxMsgSize =
+      kInitialHugeAllocSize -
+      ((kInitialHugeAllocSize / TTr::kMaxDataPerPkt) * sizeof(pkthdr_t));
+#endif
   static_assert((1 << kMsgSizeBits) >= kMaxMsgSize, "");
   static_assert((1 << kPktNumBits) * TTr::kMaxDataPerPkt > 2 * kMaxMsgSize, "");
 
