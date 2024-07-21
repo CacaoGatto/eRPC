@@ -10,6 +10,9 @@
 #include "transport_impl/verbs_common.h"
 #include "util/logger.h"
 
+// CAUTION: This is a hack to share resolve between transports. Locking is needed by the user.
+#define SHARED_CTX
+
 namespace erpc {
 
 class IBTransport : public Transport {
@@ -23,9 +26,9 @@ class IBTransport : public Transport {
 
   static constexpr size_t kRecvSize = (kMTU + 64);  ///< RECV size (with GRH)
   static constexpr size_t kRQDepth = kNumRxRingEntries;  ///< RECV queue depth
-  static constexpr size_t kSQDepth = 128;                ///< Send queue depth
+  static constexpr size_t kSQDepth = 256;                ///< Send queue depth
   static constexpr size_t kUnsigBatch = 64;  ///< Selective signaling for SENDs
-  static constexpr size_t kPostlist = 16;    ///< Maximum SEND postlist
+  static constexpr size_t kPostlist = 32;    ///< Maximum SEND postlist
   static constexpr size_t kMaxInline = 60;   ///< Maximum send wr inline data
   static constexpr size_t kRecvSlack = 32;   ///< RECVs batched before posting
 

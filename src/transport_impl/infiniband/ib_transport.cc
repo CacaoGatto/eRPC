@@ -23,6 +23,10 @@ static constexpr size_t kDefaultGIDIndex = 3;
 #error "Unsupported architecture"
 #endif
 
+#ifdef SHARED_CTX
+void *resolve_shared = nullptr;
+#endif
+
 // Initialize the protection domain, queue pair, and memory registration and
 // deregistration functions. RECVs will be initialized later when the hugepage
 // allocator is provided.
@@ -36,9 +40,18 @@ IBTransport::IBTransport(uint16_t sm_udp_port, uint8_t rpc_id, uint8_t phy_port,
   } else {
     rt_assert(kHeadroom == 40, "Invalid packet header headroom for RoCE");
   }
-
+#ifdef SHARED_CTX
+  if (resolve_shared != nullptr) {
+    memcpy(&resolve, resolve_shared, sizeof(IBResolve));
+  } else {
+    common_resolve_phy_port(phy_port, kMTU, kTransportType, resolve);
+    ib_resolve_phy_port();
+    resolve_shared = &resolve;
+  }
+#else
   common_resolve_phy_port(phy_port, kMTU, kTransportType, resolve);
   ib_resolve_phy_port();
+#endif
 
   init_verbs_structs();
   init_mem_reg_funcs();
