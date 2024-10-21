@@ -11,7 +11,7 @@
 #include "util/logger.h"
 
 // CAUTION: This is a hack to share resolve between transports. Locking is needed by the user.
-#define SHARED_CTX
+//#define SHARED_CTX
 
 namespace erpc {
 
