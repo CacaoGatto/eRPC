@@ -28,9 +28,9 @@ class IBTransport : public Transport {
   static constexpr size_t kRQDepth = kNumRxRingEntries;  ///< RECV queue depth
   static constexpr size_t kSQDepth = 256;                ///< Send queue depth
   static constexpr size_t kUnsigBatch = 64;  ///< Selective signaling for SENDs
-  static constexpr size_t kPostlist = 32;    ///< Maximum SEND postlist
+  static constexpr size_t kPostlist = 64;    ///< Maximum SEND postlist
   static constexpr size_t kMaxInline = 60;   ///< Maximum send wr inline data
-  static constexpr size_t kRecvSlack = 32;   ///< RECVs batched before posting
+  static constexpr size_t kRecvSlack = 128;   ///< RECVs batched before posting
 
   /// Ideally, the connection handshake should establish a secure queue key.
   /// For now, anything outside 0xffff0000..0xffffffff (reserved by CX3) works.
