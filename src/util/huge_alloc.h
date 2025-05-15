@@ -64,8 +64,8 @@ class HugeAlloc {
   static const size_t k_max_class_size = MB(8);  /// Max allocation size
   static const size_t k_num_classes = 18;  /// 64 B (2^6), ..., 8 MB (2^23)
 #else
-  static const size_t k_max_class_size = MB(64);  /// Max allocation size
-  static const size_t k_num_classes = 21;  /// 64 B (2^6), ..., 16 MB (2^24)
+  static const size_t k_max_class_size = MB(128);  /// Max allocation size
+  static const size_t k_num_classes = 22;  /// 64 B (2^6), ..., 16 MB (2^24)
 #endif
   static_assert(k_max_class_size == k_min_class_size << (k_num_classes - 1),
                 "");
