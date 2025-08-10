@@ -135,12 +135,17 @@ static void common_resolve_phy_port(uint8_t phy_port, size_t mtu,
   rt_assert(dev_list != nullptr, "Failed to get device list");
 
   // Traverse the device list
-  int ports_to_discover = phy_port;
+  int ports_to_discover = 0;
 
   for (int dev_i = 0; dev_i < num_devices; dev_i++) {
 #ifdef DESIGNATED_DEV
-    if (!strcmp(ibv_get_device_name(dev_list[dev_i]), DESIGNATED_DEV)) {
-      ERPC_INFO("Designated device found: %s\n", DESIGNATED_DEV);
+#ifdef __x86_64__
+char DesignatedDevice[2][8] = {"mlx5_0", "mlx5_1"};
+#elif defined(__aarch64__)
+char DesignatedDevice[2][8] = {"mlx5_2", "mlx5_3"};
+#endif
+    if (!strcmp(ibv_get_device_name(dev_list[dev_i]), DesignatedDevice[phy_port])) {
+      ERPC_INFO("Designated device found: %s\n", DesignatedDevice[phy_port]);
     } else {
       continue;
     }

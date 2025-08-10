@@ -22,11 +22,11 @@
 
 namespace erpc {
 
+#define DESIGNATED_DEV
+
 #ifdef __x86_64__
-#define DESIGNATED_DEV "mlx5_0"
 #elif defined(__aarch64__)
 #define DMA_SUPPORTED
-#define DESIGNATED_DEV "mlx5_2"
 #endif
 
 #define _unused(x) ((void)(x))  // Make production build happy
