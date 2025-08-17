@@ -22,7 +22,7 @@ class IBTransport : public Transport {
 
   // For IBTransport, we've kept (kRecvSize + 64) non-4096 aligned. Is this
   // ever beneficial?
-  static constexpr size_t kMTU = kIsRoCE ? 1024 : 3840;
+  static constexpr size_t kMTU = kIsRoCE ? 4096 : 3840;
 
   static constexpr size_t kRecvSize = (kMTU + 64);  ///< RECV size (with GRH)
   static constexpr size_t kRQDepth = kNumRxRingEntries;  ///< RECV queue depth
