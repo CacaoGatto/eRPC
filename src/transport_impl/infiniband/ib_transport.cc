@@ -16,9 +16,9 @@ constexpr size_t IBTransport::kMaxDataPerPkt;
 //  * On VM clusters (AWS/KVM), gid_index = 0 does not work, gid_index = 1 works
 //  * Mellanox's `show_gids` script lists all GIDs on all NICs
 #ifdef __aarch64__
-static constexpr size_t kDefaultGIDIndex = 1;
+static constexpr size_t kDefaultGIDIndex[2] = {1,1};
 #elif defined(__x86_64__)
-static constexpr size_t kDefaultGIDIndex = 3;
+static constexpr size_t kDefaultGIDIndex[2] = {3,3};
 #else
 #error "Unsupported architecture"
 #endif
@@ -102,7 +102,7 @@ struct ibv_ah *IBTransport::create_ah(const ib_routing_info_t *ib_rinfo) const {
   if (kIsRoCE) {
     ah_attr.grh.dgid.global.interface_id = ib_rinfo->gid.global.interface_id;
     ah_attr.grh.dgid.global.subnet_prefix = ib_rinfo->gid.global.subnet_prefix;
-    ah_attr.grh.sgid_index = kDefaultGIDIndex;
+    ah_attr.grh.sgid_index = kDefaultGIDIndex[phy_port_];
     ah_attr.grh.hop_limit = 1;
   }
 
@@ -138,7 +138,7 @@ void IBTransport::ib_resolve_phy_port() {
 
   if (kIsRoCE) {
     int ret = ibv_query_gid(resolve.ib_ctx, resolve.dev_port_id,
-                            kDefaultGIDIndex, &resolve.gid);
+                            kDefaultGIDIndex[phy_port_], &resolve.gid);
     rt_assert(ret == 0, "Failed to query GID");
   }
 }
